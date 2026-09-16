@@ -1,0 +1,27 @@
+{
+  "name": "spd-estudio",
+  "version": "1.0.0",
+  "description": "App de estudio - SPD (8086/8088)",
+  "main": "main.js",
+  "author": "Tu nombre",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.spd.estudio",
+    "productName": "SPD Estudio",
+    "files": [
+      "main.js",
+      "index.html",
+      "content.js",
+      "assets/**/*"
+    ],
+    "win": { "target": "nsis" },
+    "mac": { "target": "dmg" }
+  }
+}
