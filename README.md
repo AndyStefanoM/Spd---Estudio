@@ -1,6 +1,6 @@
-=====================================================================
+
  SPD Estudio — 8086/8088 (versión de escritorio)
-=====================================================================
+
 
 
 App de estudio para la materia SPD, con dos secciones:
@@ -13,9 +13,9 @@ App de estudio para la materia SPD, con dos secciones:
   inmediata y puntaje final.
 
 
-=====================================================================
+
 Instalación 
-=====================================================================
+
 
 1. Si todavía no tenés Node.js, instalalo desde https://nodejs.org (versión LTS).
 2. Descomprimí esta carpeta y abrí una terminal dentro de ella.
