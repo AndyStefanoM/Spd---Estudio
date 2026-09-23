@@ -128,7 +128,18 @@
   .opt-btn:hover:not(.locked){border-color:var(--accent);}
   .opt-btn.correct{background:var(--good-soft);border-color:var(--good);color:var(--good);}
   .opt-btn.incorrect{background:var(--bad-soft);border-color:var(--bad);color:var(--bad);}
+  .opt-btn.missed{border-color:var(--amber);color:var(--amber);}
   .opt-btn.locked{cursor:default;}
+  .opt-btn.checkbox{display:flex;align-items:center;gap:11px;}
+  .opt-btn .chk{
+    width:17px;height:17px;border:2px solid var(--text-muted);border-radius:4px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:12px;
+  }
+  .opt-btn.selected .chk{border-color:var(--accent);background:var(--accent);color:#08222a;}
+  .opt-btn.correct .chk{border-color:var(--good);background:var(--good);color:#08220f;}
+  .opt-btn.incorrect .chk{border-color:var(--bad);background:var(--bad);color:#2a0a08;}
+  .opt-btn.missed .chk{border-color:var(--amber);background:transparent;}
+  .multi-hint{font-size:12px;color:var(--text-muted);margin:-6px 0 14px 0;font-style:italic;}
   .explain{
     margin-top:16px;padding:14px 16px;background:var(--surface-2);border-left:3px solid var(--accent);
     border-radius:5px;font-size:13.5px;color:var(--text-muted);line-height:1.55;display:none;
@@ -273,7 +284,7 @@ function filtrarResumen(term){
 
 // ---------------- PRACTICA: SETUP ----------------
 function resetQuizSetup(){
-  quizFilters = { parcial: 'todos', tema: 'todos' };
+  quizFilters = { parcial: 'todos', tema: 'todos', cantidad: 'todas' };
 }
 
 function temasDisponibles(){
@@ -286,7 +297,8 @@ function renderQuizSetup(main){
   main.innerHTML = `
     <div class="topbar">
       <h1>Práctica</h1>
-      <div class="sub">Preguntas basadas en el an\u00e1lisis de par\u00e1metros reales de ex\u00e1menes anteriores.</div>
+      <div class="sub">Preguntas basadas en el análisis de parciales reales, más preguntas
+      generadas al azar (con números distintos cada vez) para los temas de cálculo.</div>
     </div>
     <div class="quiz-setup">
       <h2>¿Qué parcial querés practicar?</h2>
@@ -297,6 +309,10 @@ function renderQuizSetup(main){
       <div class="chip-group" id="chip-tema">
         ${temas.map(t=>`<button class="chip-btn ${quizFilters.tema===t?'selected':''}" data-t="${t}">${t==='todos'?'Todos':t}</button>`).join('')}
       </div>
+      <h2>¿Cuántas preguntas?</h2>
+      <div class="chip-group" id="chip-cantidad">
+        ${['10','20','todas'].map(c=>`<button class="chip-btn ${quizFilters.cantidad===c?'selected':''}" data-c="${c}">${c==='todas'?'Todas':c}</button>`).join('')}
+      </div>
       <button class="btn" id="start-quiz">Empezar práctica</button>
     </div>
   `;
@@ -306,6 +322,9 @@ function renderQuizSetup(main){
   document.querySelectorAll('#chip-tema .chip-btn').forEach(b=>{
     b.onclick = ()=>{ quizFilters.tema = b.dataset.t; renderQuizSetup(main); };
   });
+  document.querySelectorAll('#chip-cantidad .chip-btn').forEach(b=>{
+    b.onclick = ()=>{ quizFilters.cantidad = b.dataset.c; renderQuizSetup(main); };
+  });
   document.getElementById('start-quiz').onclick = ()=> iniciarQuiz();
 }
 
@@ -313,9 +332,27 @@ function iniciarQuiz(){
   let pool = QUIZ.slice();
   if(quizFilters.parcial !== 'todos') pool = pool.filter(q=> String(q.parcial) === quizFilters.parcial);
   if(quizFilters.tema !== 'todos') pool = pool.filter(q=> q.tema === quizFilters.tema);
+
+  // Sumar preguntas generadas al azar (números distintos en cada intento) para los
+  // generadores cuyo tema/parcial coincida con el filtro elegido.
+  const generadoresAplicables = GENERATORS.filter(g=>
+    (quizFilters.parcial === 'todos' || String(g.parcial) === quizFilters.parcial) &&
+    (quizFilters.tema === 'todos' || g.tema === quizFilters.tema)
+  );
+  generadoresAplicables.forEach(g=>{
+    const cantidad = randInt(2, 4);
+    for(let i=0; i<cantidad; i++) pool.push(g.fn());
+  });
+
   if(pool.length === 0){ alert('No hay preguntas para esa combinación. Probá con otro filtro.'); return; }
   // Mezclar orden
-  quizPool = pool.sort(()=> Math.random() - 0.5);
+  pool = pool.sort(()=> Math.random() - 0.5);
+  // Recortar a la cantidad elegida (si no es "todas")
+  if(quizFilters.cantidad !== 'todas'){
+    const n = parseInt(quizFilters.cantidad, 10);
+    if(pool.length > n) pool = pool.slice(0, n);
+  }
+  quizPool = pool;
   quizIndex = 0;
   quizScore = 0;
   quizAnswers = [];
@@ -325,8 +362,11 @@ function iniciarQuiz(){
 }
 
 // ---------------- PRACTICA: PREGUNTA ----------------
+let quizSelected = new Set();
+
 function renderQuizQuestion(main){
   const q = quizPool[quizIndex];
+  quizSelected = new Set();
   main.innerHTML = `
     <div class="topbar">
       <h1>Práctica</h1>
@@ -336,24 +376,62 @@ function renderQuizQuestion(main){
       <span>Puntaje: ${quizScore}/${quizIndex}</span>
     </div>
     <div class="q-card">
-      <div class="q-tag">Parcial ${q.parcial} · ${q.tema}</div>
+      <div class="q-tag">Parcial ${q.parcial} · ${q.tema}${q.multi ? ' · Selección múltiple' : ''}</div>
       <div class="q-text">${q.p}</div>
+      ${q.multi ? `<div class="multi-hint">Marcá todas las opciones que correspondan y después confirmá.</div>` : ''}
       <div id="opts"></div>
       <div class="explain" id="explain">${q.e}</div>
-      <div class="q-actions"><button class="btn secondary" id="next-btn" style="display:none;">
-        ${quizIndex+1 < quizPool.length ? 'Siguiente pregunta' : 'Ver resultado final'}
-      </button></div>
+      <div class="q-actions">
+        ${q.multi ? `<button class="btn secondary" id="confirm-btn" style="margin-right:auto;">Confirmar respuesta</button>` : ''}
+        <button class="btn secondary" id="next-btn" style="display:none;">
+          ${quizIndex+1 < quizPool.length ? 'Siguiente pregunta' : 'Ver resultado final'}
+        </button>
+      </div>
     </div>
   `;
   const optsWrap = document.getElementById('opts');
   q.o.forEach((opt, idx)=>{
     const b = document.createElement('button');
-    b.className = 'opt-btn';
-    b.textContent = opt;
-    b.onclick = ()=> responder(idx);
+    b.className = 'opt-btn' + (q.multi ? ' checkbox' : '');
+    b.innerHTML = q.multi ? `<span class="chk"></span><span>${opt}</span>` : opt;
+    b.onclick = ()=> q.multi ? toggleMulti(idx, b) : responder(idx);
     optsWrap.appendChild(b);
   });
   quizAnswered = false;
+  if(q.multi){
+    document.getElementById('confirm-btn').onclick = ()=> confirmarMulti();
+  }
+}
+
+function toggleMulti(idx, btn){
+  if(quizAnswered) return;
+  if(quizSelected.has(idx)){ quizSelected.delete(idx); btn.classList.remove('selected'); }
+  else { quizSelected.add(idx); btn.classList.add('selected'); }
+}
+
+function confirmarMulti(){
+  if(quizAnswered) return;
+  if(quizSelected.size === 0){ alert('Marcá al menos una opción antes de confirmar.'); return; }
+  quizAnswered = true;
+  const q = quizPool[quizIndex];
+  const correctas = new Set(q.c);
+  const botones = document.querySelectorAll('.opt-btn');
+  let exacto = true;
+  botones.forEach((b,i)=>{
+    b.classList.add('locked');
+    const marcada = quizSelected.has(i);
+    const esCorrecta = correctas.has(i);
+    if(esCorrecta && marcada) b.classList.add('correct');
+    else if(!esCorrecta && marcada){ b.classList.add('incorrect'); exacto = false; }
+    else if(esCorrecta && !marcada){ b.classList.add('missed'); exacto = false; }
+  });
+  if(exacto) quizScore++;
+  quizAnswers.push({ q, elegida: [...quizSelected], acierto: exacto });
+  document.getElementById('explain').classList.add('show');
+  document.getElementById('confirm-btn').style.display = 'none';
+  document.getElementById('next-btn').style.display = 'inline-block';
+  document.getElementById('next-btn').onclick = ()=> avanzar();
+  actualizarProgreso();
 }
 
 function responder(idx){
@@ -372,10 +450,16 @@ function responder(idx){
   quizAnswers.push({ q, elegida: idx, acierto });
   document.getElementById('explain').classList.add('show');
   document.getElementById('next-btn').style.display = 'inline-block';
-  document.getElementById('next-btn').onclick = ()=>{
-    if(quizIndex+1 < quizPool.length){ quizIndex++; renderQuizQuestion(document.getElementById('main')); }
-    else { currentView = 'practica-score'; render(); }
-  };
+  document.getElementById('next-btn').onclick = ()=> avanzar();
+  actualizarProgreso();
+}
+
+function avanzar(){
+  if(quizIndex+1 < quizPool.length){ quizIndex++; renderQuizQuestion(document.getElementById('main')); }
+  else { currentView = 'practica-score'; render(); }
+}
+
+function actualizarProgreso(){
   document.querySelector('.q-progress').innerHTML = `<span>Pregunta ${quizIndex+1} de ${quizPool.length}</span><span>Puntaje: ${quizScore}/${quizIndex+1}</span>`;
 }
 

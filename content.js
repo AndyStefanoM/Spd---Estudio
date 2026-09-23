@@ -59,7 +59,18 @@ const RESUMEN = [
         <li><b>Complemento a 1:</b> invertir todos los bits. Mismo problema del doble cero.</li>
         <li><b>Complemento a 2 (la que usan las computadoras reales):</b> invertir todos los
         bits y sumar 1. Rango con n bits: <b>(-2ⁿ⁻¹ ; +2ⁿ⁻¹-1)</b>.</li>
+        <li><b>Exceso a 2ⁿ⁻¹ ("Exceso K"):</b> se suma el sesgo 2ⁿ⁻¹ al número y se expresa en
+        binario puro. Atajo de examen: <b>es igual al Complemento a 2 pero con el bit de signo
+        invertido.</b> No se usa para sumar en la ALU, pero es la misma idea que usa el
+        <b>exponente de IEEE 754</b>.</li>
       </ul>
+      <table>
+        <tr><th>Sistema</th><th>-39d en 1 byte (hex)</th></tr>
+        <tr><td>Signo y Magnitud</td><td><code>A7h</code></td></tr>
+        <tr><td>Complemento a 1</td><td><code>D8h</code></td></tr>
+        <tr><td>Complemento a 2</td><td><code>D9h</code></td></tr>
+        <tr><td>Exceso a 2⁷ (128)</td><td><code>59h</code> (Ca2 con el signo invertido)</td></tr>
+      </table>
       <h3>Códigos de caracteres y paridad</h3>
       <p><b>ASCII</b> (7 bits, 128 códigos) y <b>ASCII extendido</b> (8 bits, 256 códigos).
       El <b>bit de paridad</b> es un bit extra para que la cantidad total de "unos" sea
@@ -86,6 +97,12 @@ const RESUMEN = [
       <div class="img-row">
         <figure><img src="./assets/img/buffer3estados.png"><figcaption>Buffer de 3 estados</figcaption></figure>
       </div>
+      <p><b>Distractor típico de examen:</b> una compuerta de <b>3 estados / Open Collector</b>
+      es la que puede dejar su <b>salida en alta impedancia</b>. Una compuerta
+      <b>"grounded"</b> es otra cosa: tiene su <b>salida conectada a masa</b>.</p>
+      <p>Otro circuito que suele pedirse como ejercicio: el <b>negador controlado</b> — con
+      control en 1, la salida es la negación del dato; con control en 0, repite el dato sin
+      invertir.</p>
       <h3>Multiplexores y demultiplexores</h3>
       <p><b>Multiplexor (MUX):</b> 2ⁿ entradas y 1 sola salida, elegida por un código de
       selección. <b>Demultiplexor (DEMUX):</b> al revés, 1 entrada y 2ⁿ salidas posibles.</p>
@@ -147,7 +164,21 @@ const RESUMEN = [
         overflow. Bandera: <b>OF</b>.</li>
       </ul>
       <p>La resta se implementa sumando el <b>complemento a 2</b> del sustraendo — así un
-      mismo circuito sirve para sumar y restar.</p>
+      mismo circuito sirve para sumar y restar. <b>Por eso la misma regla de overflow aplica a
+      la resta:</b> conviene convertirla mentalmente en una suma antes de evaluar si hay
+      desborde.</p>
+      <h3>Números reales — Punto Fijo</h3>
+      <p>Cuando los dígitos fraccionarios disponibles ("m") no alcanzan para el número exacto
+      ("n" dígitos, n&gt;m), hay dos formas de aproximar:</p>
+      <ul>
+        <li><b>Truncamiento:</b> se descartan los dígitos que sobran. Error máximo: <b>1 bit</b>
+        (2⁻ᵐ).</li>
+        <li><b>Redondeo:</b> se descartan los dígitos que sobran, pero si el primero descartado
+        es 1, se suma 1 al bit menos significativo que queda. Error máximo: <b>½ bit</b> — por
+        eso <b>redondear da menor error</b> que truncar solamente.</li>
+        <li>Para números negativos en <b>Ca2</b>: primero truncar/redondear la versión
+        <b>positiva</b>, y recién después calcular el complemento a 2.</li>
+      </ul>
       <h3>Punto flotante — IEEE 754 (precisión simple, 32 bits)</h3>
       <div class="img-row">
         <figure><img src="./assets/img/ieee754mask.png"><figcaption>Máscara IEEE 754 precisión simple</figcaption></figure>
@@ -183,6 +214,25 @@ const RESUMEN = [
       <div class="img-row">
         <figure><img src="./assets/img/cache_niveles.png"><figcaption>Niveles de caché (L1/L2/L3)</figcaption></figure>
       </div>
+      <h3>Cómo descomponer una dirección para la caché (ejercicio típico)</h3>
+      <ol>
+        <li><b>Offset:</b> si un bloque tiene "b" palabras de "p" bytes, se necesitan
+        <code>log₂(b·p)</code> bits — son los bits <b>menos significativos.</b></li>
+        <li>Con los bits restantes: en <b>Mapeo Directo</b> se separan en <b>#renglón</b>
+        (<code>log₂(cant. de renglones)</code> bits) + <b>etiqueta</b> (el resto). En
+        <b>Asociativa</b>, todos forman directamente el <b>#bloque</b> (no hay "renglón fijo").</li>
+      </ol>
+      <p><i>Ejemplo: bloques de 32 palabras de 2 bytes (offset = 6 bits), caché de 64 renglones
+      (6 bits de renglón), bus de 20 bits → quedan 8 bits de etiqueta.</i></p>
+      <h3>Cómo armar un banco de memoria (ejercicio típico)</h3>
+      <ul>
+        <li><b>Columnas</b> (chips en paralelo) = ancho de palabra del bus de Data ÷ ancho de
+        palabra de cada chip.</li>
+        <li><b>Filas</b> (profundidad) = capacidad total necesaria ÷ capacidad de cada fila.</li>
+        <li><b>Entrelazado (interleaving):</b> los bits <b>menos significativos</b> de la
+        dirección eligen el banco (permite superponer accesos y ganar velocidad).
+        <b>Continuo:</b> lo eligen los bits <b>más significativos.</b></li>
+      </ul>
       <h3>Memoria virtual</h3>
       <p>Divide la memoria en <b>páginas</b>. La <b>TLB</b> guarda las últimas traducciones
       de página virtual → página física. Si la página buscada no está en la RAM, ocurre un
@@ -211,11 +261,20 @@ const RESUMEN = [
         <li><b>WAR:</b> una instrucción lee algo que otra va a escribir después.</li>
         <li><b>WAW:</b> dos instrucciones escriben el mismo destino.</li>
       </ul>
+      <p><b>Predicción de saltos:</b> <b>estática</b> (siempre igual, ej: "nunca salta" o "si es
+      hacia atrás, siempre salta") o <b>dinámica</b> (aprende del historial reciente de ese
+      salto). Las <b>tablas de reserva</b> muestran qué etapa ocupa cada instrucción en cada
+      ciclo, para anticipar <b>hazards estructurales</b>. La <b>segmentación</b> es cuando cada
+      etapa del pipeline se especializa en una única tarea.</p>
       <h3>RISC vs. CISC</h3>
       <div class="img-row">
         <figure><img src="./assets/img/risc_cisc.png"><figcaption>Comparación RISC vs CISC</figcaption></figure>
       </div>
       <p>La familia Intel x86 (nuestro 8086/88) es <b>CISC</b>.</p>
+      <p><b>Dos datos que se prestan a confusión:</b> a RISC se lo conoce como arquitectura
+      <b>"Load-Store"</b> (solo esas 2 instrucciones acceden a memoria), y su Unidad de Control
+      es de <b>lógica cableada (hardwired)</b>, <b>no</b> microprogramada — el control
+      microprogramado es característica de <b>CISC</b>.</p>
     `
   },
   {
@@ -227,6 +286,17 @@ const RESUMEN = [
       (se lee) y <b>Datos</b> (se lee y escribe). Nuestro procesador usa <b>Mapeo Aislado</b>:
       1M de direcciones de memoria (20 bits) y 64K de direcciones de E/S (16 bits), con las
       instrucciones <b>IN</b> y <b>OUT</b>.</p>
+      <ul>
+        <li>A cada <b>puerto</b> le corresponde una única dirección de E/S, pero una misma
+        <b>unidad</b> de E/S puede tener varios puertos (uno de cada tipo).</li>
+        <li><b>Falso</b> que programar E/S sea idéntico a programar memoria: usan
+        instrucciones (<code>IN</code>/<code>OUT</code> vs <code>MOV</code>) y espacios de
+        direcciones distintos.</li>
+        <li>Las funciones de una unidad de E/S son exactamente 5: <b>comunicación con la CPU,
+        comunicación con el dispositivo, control y temporización, almacenamiento temporal, y
+        detección de errores.</b> ("Interrogar al periférico" u "otorgar los buses" son
+        distractores, no forman parte de esta lista.)</li>
+      </ul>
       <h3>Polling vs. Interrupciones</h3>
       <p><b>Polling:</b> la CPU pregunta de a uno, dentro del programa principal, sin poder
       anidar. <b>Interrupciones:</b> el dispositivo avisa, mucho más eficiente.</p>
@@ -237,18 +307,28 @@ const RESUMEN = [
       <div class="img-row">
         <figure><img src="./assets/img/ivt_base.png"><figcaption>Cálculo de la dirección base en la IVT</figcaption></figure>
       </div>
-      <p>La <b>IVT</b> tiene 256 vectores de 4 bytes cada uno: <b>00h-04h Dedicadas</b>,
-      <b>05h-1Eh Reservadas</b>, <b>1Fh-FFh Disponibles</b>.</p>
+      <p>La <b>IVT</b> tiene 256 vectores de 4 bytes cada uno: <b>00h-04h Dedicadas</b> (5),
+      <b>05h-1Fh Reservadas</b> (27), <b>20h-FFh Disponibles</b> (224).</p>
       <div class="img-row">
         <figure><img src="./assets/img/ivt_clasif.png"><figcaption>Clasificación de tipos en la IVT</figcaption></figure>
       </div>
       <p>La <b>NMI</b> no depende de IF (siempre se atiende). Para anidar interrupciones
       dentro de una ISR hay que ejecutar <b>STI</b>. El <b>PIC 8259A</b> maneja 8 IRs por
-      chip, expandible en cascada.</p>
+      chip, expandible en cascada (hasta 8 esclavos + 1 maestro = 64 IRs). Con prioridad fija,
+      <b>IR0 es la más prioritaria</b>; si llegan 2 pedidos juntos, le hace <b>contención</b>
+      (deja esperando) al de menor prioridad.</p>
       <h3>DMA</h3>
-      <p>El periférico transfiere datos directo a memoria, sin pasar por la CPU. Señales:
-      <b>HOLD/HOLDA</b> (CPU cede el bus) y <b>DREQ/DACK</b> (petición/aceptación del
-      periférico). Chip controlador: <b>Intel 8237A</b>, con 4 canales.</p>
+      <p>El periférico transfiere datos directo a memoria; <b>la CPU nunca interviene</b>
+      durante la transferencia en sí. Señales: <b>HOLD/HOLDA</b> (CPU cede el bus) y
+      <b>DREQ/DACK</b> (petición/aceptación del periférico). Chip controlador: <b>Intel
+      8237A</b>, con 4 canales, prioridad fija o rotativa.</p>
+      <ul>
+        <li><b>Trampa de examen:</b> la CPU cede el bus al terminar el <b>ciclo de bus</b> en
+        curso, <b>no</b> al terminar toda la instrucción.</li>
+        <li>Modos: <b>Simple</b> (un dato por vez), <b>En Bloque</b> (hasta que el <b>Terminal
+        Count (TC)</b> llega a cero), <b>A Demanda</b> (sigue mientras el periférico mantenga
+        activa su señal DREQ).</li>
+      </ul>
       <div class="img-row">
         <figure><img src="./assets/img/dma_senales.png"><figcaption>Señales de una transferencia DMA</figcaption></figure>
       </div>
@@ -310,6 +390,192 @@ const QUIZ = [
   { parcial: 2, tema: 'DMA', p: 'Durante una transferencia DMA, ¿quién controla los buses del sistema?', o: ['La CPU, todo el tiempo', 'El controlador de DMA (DMAC)', 'La memoria principal', 'El sistema operativo por software'], c: 1, e: 'La CPU cede el control de los buses (HOLD/HOLDA) y el DMAC pasa a ser el "bus master".' },
   { parcial: 2, tema: 'DMA', p: '¿Cuál es el chip controlador de DMA de la familia Intel?', o: ['8259A', '8237A', '8253', '8255'], c: 1, e: 'El 8237A es el controlador de DMA; el 8259A es el de interrupciones (PIC).' },
   { parcial: 2, tema: 'DMA', p: 'Las señales HOLD y HOLDA sirven para...', o: ['Que un periférico pida datos a la CPU', 'Que la CPU ceda y confirme la cesión del control del bus', 'Sincronizar la memoria caché', 'Generar la interrupción NMI'], c: 1, e: 'HOLD = pedido de control del bus; HOLDA = la CPU lo concede.' },
+
+  // ---------- AMPLIACIÓN (2da pasada sobre el compilado) ----------
+  { parcial: 1, tema: 'Numérico', p: 'La representación en Exceso a 2ⁿ⁻¹ de un número es igual, bit a bit, a...', o: ['Signo y Magnitud', 'Complemento a 1', 'Complemento a 2 con el bit de signo invertido', 'ASCII de ese número'], c: 2, e: 'Es el atajo más rápido para resolverlo en un parcial: se calcula el Ca2 y se invierte solo el bit de signo.' },
+  { parcial: 1, tema: 'Numérico', p: 'Para lograr el MENOR error de representación al aproximar un número real en punto fijo, conviene...', o: ['Truncar solamente', 'Redondear (y truncar)', 'No truncar', 'Usar signo y magnitud'], c: 1, e: 'Truncar solo tiene un error máximo de 1 bit; redondeando el error máximo baja a ½ bit.' },
+  { parcial: 1, tema: 'Overflow', p: 'Al restar dos números CON signo, ¿aplica la misma regla de overflow que en la suma?', o: ['No, la resta nunca tiene overflow', 'Sí, porque restar es sumar el complemento a 2 del sustraendo', 'Solo si el resultado es cero', 'Solo en números sin signo'], c: 1, e: 'Como el hardware convierte toda resta en una suma, la regla de positivo+positivo=negativo (y viceversa) sigue aplicando.' },
+  { parcial: 1, tema: 'Boole', p: 'Una compuerta "grounded" se caracteriza por...', o: ['Su salida puede estar en alta impedancia', 'Su salida está conectada a masa', 'Sus entradas están en alta impedancia', 'No tener salida'], c: 1, e: 'No confundir con el buffer de 3 estados: "grounded" implica salida atada a masa, no alta impedancia.' },
+  { parcial: 1, tema: 'Arquitectura', p: 'A un procesador RISC también se lo conoce como arquitectura...', o: ['CISC-compatible', 'Load-Store', 'Microprogramada', 'Von Neumann pura'], c: 1, e: 'Porque de todo su set de instrucciones, solo Load y Store acceden a la memoria.' },
+  { parcial: 1, tema: 'Arquitectura', p: 'La Unidad de Control de un procesador RISC es de tipo...', o: ['Microprogramada', 'Cableada (hardwired)', 'Asociativa', 'Virtual'], c: 1, e: 'Es una confusión típica: el control microprogramado es justamente una característica de CISC, no de RISC.' },
+  { parcial: 1, tema: 'Unidad de Control', p: 'Un predictor de saltos del tipo "nunca salta" es de tipo...', o: ['Dinámico', 'Estático', 'Adaptativo', 'Estructural'], c: 1, e: 'Siempre predice lo mismo sin importar el historial: por eso es estático.' },
+  { parcial: 1, tema: 'Memorias', p: 'En un banco de memoria con direccionamiento ENTRELAZADO (interleaving), ¿qué bits de la dirección eligen el banco?', o: ['Los más significativos', 'Los menos significativos', 'El bit de paridad', 'No depende de la dirección'], c: 1, e: 'Los bits menos significativos reparten direcciones consecutivas entre distintos bancos, permitiendo superponer accesos.' },
+  { parcial: 2, tema: 'E/S', p: '¿Cuál de estas NO es una función genérica de una unidad de E/S?', o: ['Detección de errores', 'Control y temporización', 'Interrogar al periférico', 'Almacenamiento temporal'], c: 2, e: 'Las 5 funciones son: comunicación con la CPU, comunicación con el dispositivo, control/temporización, almacenamiento temporal y detección de errores. "Interrogar al periférico" es un distractor.' },
+  { parcial: 2, tema: 'Interrupciones', p: 'Los tipos 05h a 1Fh de la IVT son...', o: ['Dedicados', 'Disponibles', 'Reservados', 'Inexistentes'], c: 2, e: 'Son 27 tipos reservados (05h a 1Fh); recién de 20h a FFh (224 tipos) quedan disponibles para el programador.' },
+  { parcial: 2, tema: 'Interrupciones', p: 'Si el PIC 8259A recibe un pedido por IR4 y por IR5 al mismo tiempo (prioridad fija), ¿qué hace?', o: ['Atiende IR5 primero', 'Atiende IR4 primero y le hace contención a IR5', 'Ignora ambos', 'Atiende ambos en simultáneo'], c: 1, e: 'Con prioridad fija, el número de IR más bajo gana; el otro queda "recordado" (contención) hasta ser atendido.' },
+  { parcial: 2, tema: 'DMA', p: '¿En qué momento exacto la CPU cede el control del bus a un DMAC que lo solicitó?', o: ['Al terminar la instrucción completa', 'Al terminar el ciclo de bus en curso', 'Inmediatamente, sin esperar nada', 'Al terminar el programa'], c: 1, e: 'No hace falta esperar toda la instrucción — alcanza con que termine el ciclo de bus que está en curso en ese momento.' },
+
+  // ---------- SELECCIÓN MÚLTIPLE (formato "marcar todas las que correspondan") ----------
+  { parcial: 1, tema: 'Overflow', multi: true, p: 'Considerando palabras de 3 bits en Complemento a 2, marcá todas las sumas que arrojarán overflow:', o: ['110 + 110', '010 + 101', '011 + 011', '110 + 011', '100 + 100', '001 + 000'], c: [2, 4], e: '011+011 (+3+3) da como resultado binario -2 (se "sale" del rango -4..+3): overflow. 100+100 (-4-4) da como resultado 0: overflow. Las demás combinan signos distintos o dan un resultado que sigue entrando en el rango de 3 bits, así que no desbordan.' },
+  { parcial: 1, tema: 'Numérico', multi: true, p: 'A la combinación binaria 010111010b (9 bits, con 5 unos) le faltan 3 bits. Marcá todas las ternas que se le podrían agregar para que el conjunto final tenga paridad PAR:', o: ['000', '001', '010', '011', '100', '101', '110', '111'], c: [1, 2, 4, 7], e: 'Ya hay 5 unos (cantidad impar). Para que el total sea par, la terna agregada debe aportar una cantidad IMPAR de unos: eso pasa con 001, 010 y 100 (un solo 1) y con 111 (tres unos).' },
+  { parcial: 1, tema: 'Boole', multi: true, p: 'Marcá todas las afirmaciones correctas sobre los Flip-Flops:', o: ['Operando de forma asincrónica, para poner Q=1 hay que poner SET=1 y CLR=0', 'Operando de forma sincrónica, para poner CLR=1 hay que poner SET=1 y un pulso ascendente en D', 'Operando de forma sincrónica, para poner Q=1 hay que poner D=1 y un pulso ascendente en CLK', 'Operando de forma sincrónica, para poner D=1 hay que poner Q=1 y un pulso ascendente en SET', 'Operando de forma asincrónica, para poner Q=1 hay que poner CLR=1 y SET=0'], c: [0, 2], e: 'SET/CLR son las entradas asincrónicas (actúan directo, sin reloj); D/CLK son las sincrónicas (necesitan el pulso de reloj). Las opciones b, d y e mezclan las señales de forma incorrecta o al revés.' },
+  { parcial: 1, tema: 'Memorias', multi: true, p: 'Marcá todas las afirmaciones correctas sobre la memoria Caché:', o: ['Los bloques de la memoria principal pueden tener cualquier longitud', 'El bit de validez indica si el renglón tiene un dato cargado, no si fue modificado', 'La etiqueta resuelve el número de renglón en la organización asociativa', 'En el Mapeo Directo, a cada bloque le corresponde un único número de renglón posible', 'En la organización Asociativa se puede agregar una memoria asociativa para recordar las últimas traducciones #bloque↔#renglón', 'En un renglón de caché puedo colocar cualquier bloque de memoria principal si la organización es Asociativa'], c: [1, 3, 4, 5], e: 'Los bloques tienen longitud fija (no "cualquiera"). El bit de validez indica presencia de dato válido, no modificación (eso es el bit de "dirty"). En la organización asociativa no hay un "número de renglón" fijo que resolver: por eso se necesitan algoritmos de búsqueda más sofisticados.' },
+  { parcial: 1, tema: 'Arquitectura', multi: true, p: 'Marcá todas las afirmaciones correctas sobre las arquitecturas RISC:', o: ['Se las suele conocer como arquitecturas Load-Store', 'Poseen control microprogramado', 'Sus instrucciones demandan varios ciclos de reloj para ejecutarse', 'Se basan en el modelo de Harvard', 'Poseen varios formatos de instrucción distintos', 'Tienen muy pocos modos de direccionamiento', 'Sus registros son todos de propósito general'], c: [0, 3, 5, 6], e: 'RISC es Load-Store, de control cableado (no microprogramado), la mayoría de instrucciones toma 1 ciclo de reloj (no varios), se basa en Harvard, tiene formato de instrucción mayormente fijo (no "varios formatos"), pocos modos de direccionamiento y registros de propósito general.' },
+  { parcial: 1, tema: 'Unidad de Control', multi: true, p: 'Marcá todas las afirmaciones correctas sobre los pipelines de instrucciones:', o: ['Las instrucciones MOV AX,5 y ADD BX,CX presentan un problema de datos si se paralelizan', 'Un predictor de saltos dinámico es del tipo "si es un salto hacia atrás, siempre salta"', 'Un predictor de saltos del tipo "nunca salta" es de tipo estático', 'Las tablas de reserva sirven para saber qué etapa ocupa cada instrucción y detectar si se pueden paralelizar', 'En la segmentación de instrucciones, cada etapa de la cadena está especializada en una tarea específica'], c: [2, 3, 4], e: 'MOV AX,5 y ADD BX,CX no comparten ningún registro, así que NO hay hazard de datos entre ellas (opción trampa). "Si es salto hacia atrás, siempre salta" es una heurística ESTÁTICA, no dinámica (otra trampa clásica). Las otras tres son correctas.' },
+
+  // ---------- AMPLIACIÓN (parcialitos de la cursada) ----------
+  { parcial: 1, tema: 'Numérico', multi: true, p: 'Marcá las afirmaciones correctas:', o: ['Al realizar sumas en hexadecimal, el llevarse "unos" significa llevarse potencias de 16', 'Para multiplicar una cifra hexadecimal por la base debo inyectar un cero por izquierda y desplazar los dígitos hacia la derecha', 'El sistema binario es basado y posicional', 'Los pesos del sistema binario desde el dígito cero hasta el enésimo son 1, 2, 4, 8, 16, … 2 a la n', 'La base de un sistema numérico no define la cantidad de símbolos que posee'], c: [0, 2, 3], e: 'Multiplicar por la base es inyectar un CERO POR DERECHA y desplazar hacia la IZQUIERDA (la opción b lo dice al revés). La base sí define la cantidad de símbolos posibles (en binario: 2; en hexadecimal: 16), así que la opción e es falsa.' },
+  { parcial: 1, tema: 'Numérico', multi: true, p: '¿Qué sistemas de numeración binaria entera con signo permiten tener el siguiente rango de representación: {-(2ⁿ⁻¹) ; +(2ⁿ⁻¹-1)}?', o: ['Signo y Complemento (no existe como tal)', 'Exceso a 2', 'Exceso 2 a la (n-1)', 'Signo y Magnitud', 'Complemento a 1', 'Complemento a 2'], c: [2, 5], e: 'Signo y Magnitud y Complemento a 1 tienen rango simétrico (-(2ⁿ⁻¹-1) a +(2ⁿ⁻¹-1)) por el problema del doble cero. Solo Complemento a 2 y Exceso 2 a la (n-1) llegan a ese rango asimétrico (un negativo más que positivos) — tiene sentido, porque son la misma representación con el bit de signo invertido.' },
+  { parcial: 1, tema: 'Numérico', p: '¿Qué máquina inventó Charles Babbage, considerada el primer concepto de los ordenadores modernos?', o: ['UNIVAC', 'Máquina Analítica', 'ENIAC', 'Colossus'], c: 1, e: 'La Máquina Analítica (Analytical Engine) de Babbage, diseñada en el siglo XIX, es considerada el primer diseño conceptual de una computadora de propósito general (aunque nunca se terminó de construir en su época).' },
+  { parcial: 1, tema: 'Numérico', p: 'Ordenando cronológicamente las tecnologías con que se construyeron los ordenadores, ¿cuál es la secuencia correcta?', o: ['Engranajes → Relés → Tubos de vacío → Transistores → Circuitos integrados → Moleculares', 'Tubos de vacío → Engranajes → Transistores → Relés → Circuitos integrados → Moleculares', 'Transistores → Circuitos integrados → Tubos de vacío → Relés → Engranajes → Moleculares', 'Engranajes → Tubos de vacío → Relés → Circuitos integrados → Transistores → Moleculares'], c: 0, e: 'El orden histórico real es: Engranajes (máquinas mecánicas) → Relés electromecánicos → Tubos de vacío → Transistores → Circuitos integrados → (hoy en día se investiga la electrónica molecular como posible próxima etapa).' },
+  { parcial: 1, tema: 'Numérico', p: 'Con 8 bits, ¿cuántas cifras decimales distintas podrán representarse?', o: ['256', '128', '1024', '8'], c: 0, e: 'Con "n" bits se pueden representar 2ⁿ combinaciones distintas: 2⁸ = 256.' },
+  { parcial: 1, tema: 'Numérico', multi: true, p: 'Trabajando en Complemento a 2 de 1 byte, marcá todos los valores hexadecimales que representan un número NEGATIVO:', o: ['61h', '7Fh', 'ACh', '4Ah', 'FFh', '8Bh', 'E0h', '00h'], c: [2, 4, 5, 6], e: 'En Ca2 de 1 byte, un valor es negativo cuando su bit más significativo es 1 — es decir, cuando el valor es 80h o mayor. Eso pasa con ACh, FFh, 8Bh y E0h. Los demás (61h, 7Fh, 4Ah, 00h) son menores a 80h, así que son positivos o cero.' },
+  { parcial: 1, tema: 'Numérico', multi: true, p: 'Marcá todas las afirmaciones correctas:', o: ['Si inyecto un cero por izquierda y desplazo los dígitos una posición a la derecha (descartando el menos significativo), estoy dividiendo por la base', 'Al restar cifras binarias, pido prestado de a 2, no de a 10', 'Al sumar cifras binarias, me llevo potencias de 2, no de 10', 'Si inyecto un cero por derecha y desplazo los dígitos una posición a la izquierda, estoy sumando'], c: [0, 1, 2], e: 'Desplazar a la izquierda inyectando un cero por derecha es MULTIPLICAR por la base (no sumar) — la opción d está mal. Las otras tres son correctas: desplazar a la derecha es dividir, y las operaciones de acarreo/préstamo en binario funcionan en base 2, no en base 10.' },
+  { parcial: 1, tema: 'Numérico', p: '¿Qué sistema de representación con signo se arma así: se parte de la cifra positiva, se deja el bit más significativo como signo, se invierten todos los demás bits (unos por ceros y viceversa) y finalmente se suma una unidad en la posición menos significativa?', o: ['Signo y Magnitud', 'Complemento a 1', 'Complemento a 2', 'Exceso a 2ⁿ⁻¹'], c: 2, e: 'Esa descripción es exactamente el procedimiento de Complemento a 2: invertir los bits de la versión positiva y sumar 1.' },
+  { parcial: 1, tema: 'Numérico', multi: true, p: 'Marcá todas las afirmaciones correctas sobre la representación binaria en computadoras:', o: ['El computador trabaja con la representación binaria', 'Una cifra binaria tiene un único significado, que es el que se obtiene al pasar su valor al sistema decimal', 'Un mismo valor binario puede ser usado para representar información diferente', 'En la ALU del computador siempre se operan cifras binarias que representan cantidades', 'La longitud de las cifras binarias en un computador depende de la cantidad de memoria principal que posea', 'La información en computadoras se representa con una cantidad fija de bits'], c: [0, 2, 5], e: 'Un mismo patrón de bits puede significar un número, un carácter ASCII, una instrucción, etc. según el contexto (por eso la opción b es falsa). La longitud de las cifras (byte, word, etc.) depende de la arquitectura del procesador, no de cuánta memoria tenga instalada (opción e falsa). Las correctas: se trabaja en binario, un mismo valor puede representar cosas distintas, y la información usa una cantidad fija de bits.' },
+  { parcial: 1, tema: 'Numérico', p: '¿Cuántos bits usa el código UTF-32?', o: ['32 bits', '16 bits', '8 bits', '7 bits'], c: 0, e: 'UTF-32 usa una cantidad fija de 32 bits por carácter (a diferencia de ASCII estándar con 7 bits y ASCII extendido con 8 bits).' },
+  { parcial: 1, tema: 'Arquitectura', multi: true, p: 'Indicá la estructura interna de una CPU (marcá todas las que correspondan):', o: ['Entrada/Salida', 'Memoria Principal', 'Buses', 'Unidad de Control de Registros y Decodificadores', 'Registros', 'Unidad de Control', 'Interconexión interna de la CPU', 'Lógica Secuencial', 'Unidad Aritmético-Lógica'], c: [4, 5, 6, 8], e: 'La CPU se compone de Registros, Unidad de Control, Interconexión interna y ALU. Entrada/Salida, Memoria Principal y Buses son parte de la ESTRUCTURA DEL ORDENADOR completo, no de la CPU en particular — y "Unidad de Control de Registros y Decodificadores" junto con "Lógica Secuencial" son en realidad partes INTERNAS de la Unidad de Control, un nivel más profundo.' },
+  { parcial: 1, tema: 'Arquitectura', multi: true, p: 'Indicá los elementos estructurales de un ordenador o computador (marcá todos los que correspondan):', o: ['Memoria Principal', 'Entrada/Salida', 'CPU', 'Memoria de Control', 'Registros', 'Unidad de Control', 'Unidad Aritmético-Lógica', 'Buses'], c: [0, 1, 2, 7], e: 'La estructura del ORDENADOR completo es: CPU, Memoria Principal, Entrada/Salida y Buses. Memoria de Control, Registros, Unidad de Control y ALU son partes INTERNAS de la CPU, no bloques del ordenador en sí — es la confusión típica que buscan estas preguntas.' },
+  { parcial: 1, tema: 'Arquitectura', multi: true, p: 'Según la clasificación de Flynn vista en la materia, marcá todas las asociaciones correctas:', o: ['CPU común → SISD', 'CPU vectorial → MISD', 'Procesadores multinúcleo → MISD', 'Sistemas distribuidos → SISD', 'CPU vectorial → SIMD', 'Sistemas distribuidos → MIMD'], c: [0, 2, 4, 5], e: 'Según la clasificación vista en la cátedra: CPU común = SISD, CPU vectorial = SIMD, Procesadores multinúcleo = MISD, y Sistemas distribuidos = MIMD.' },
+  { parcial: 1, tema: 'Arquitectura', p: '¿Cuál de los siguientes atributos, visible al programador, tiene impacto directo en la ejecución de un programa?', o: ['Arquitectura', 'Organización', 'Estructura', 'Codificación'], c: 0, e: 'La Arquitectura es justamente lo que "ve" el programador (registros, set de instrucciones) y por eso afecta directamente cómo se ejecuta el programa. Organización y Estructura son transparentes para el programador.' },
+  { parcial: 1, tema: 'Memorias', p: 'El modelo de Harvard Mejorada está implementado en los procesadores Intel en sus niveles de caché. ¿En qué nivel se separan los datos de las instrucciones?', o: ['Nivel 1', 'Nivel 2', 'Nivel 3', 'Nivel 4'], c: 0, e: 'La separación entre caché de instrucciones y caché de datos (el modelo Harvard Mejorada) ocurre específicamente en el nivel 1 (L1) de la jerarquía de caché.' },
+  { parcial: 1, tema: 'Arquitectura', multi: true, p: 'Indicá las funciones principales de un computador:', o: ['Decodificar', 'Codificar', 'Procesar', 'Almacenar', 'Multiplexar', 'Transportar', 'Controlar', 'Mover'], c: [2, 3, 6, 7], e: 'Las 4 funciones básicas de cualquier computador son: Mover (datos entre sus partes), Almacenar, Procesar y Controlar. "Transportar" es un distractor que suena parecido a "Mover" pero no es el término correcto.' },
+  { parcial: 1, tema: 'Unidad de Control', multi: true, p: 'Indicá la estructura INTERNA de la Unidad de Control (no de toda la CPU):', o: ['Unidad Aritmético-Lógica', 'Interconexión interna de la CPU', 'Memoria de control', 'Entrada/Salida', 'Registros', 'Buses', 'Lógica secuencial', 'Unidad de Control de Registros y Decodificadores'], c: [2, 6, 7], e: 'La Unidad de Control, vista por dentro, se compone de: Memoria de Control, Lógica Secuencial y Unidad de Control de Registros y Decodificadores. Los Registros y la ALU son parte de la CPU en general, pero no de la Unidad de Control específicamente.' },
+  { parcial: 1, tema: 'Arquitectura', p: 'En la máquina de Von Neumann, la memoria principal contiene tanto instrucciones como datos en el mismo espacio. En la máquina de Harvard, en cambio...', o: ['También hay un único espacio de memoria compartido', 'Existen dos espacios de memoria separados: uno para instrucciones y otro para datos', 'No existe memoria principal', 'Las instrucciones se guardan solo en registros'], c: 1, e: 'Harvard separa físicamente la memoria de instrucciones y la de datos, a diferencia de Von Neumann que los mezcla en un único espacio. La Harvard Mejorada combina ambos: hacia afuera se ve como Von Neumann, pero internamente trabaja como Harvard.' },
+  { parcial: 1, tema: 'Boole', multi: true, p: 'Marcá todas las equivalencias correctas entre compuertas:', o: ['Un buffer con un NOT en la salida equivale a una compuerta NOT', 'Una compuerta NOR con un NOT en cada entrada equivale a una compuerta AND', 'Para implementar una compuerta EXOR alcanza con combinar compuertas AND, OR y NOT', 'Una compuerta NAND con un NOT en cada entrada equivale a una compuerta AND', 'Una compuerta AND con un NOT en cada entrada equivale a una compuerta NAND'], c: [0, 1, 2], e: 'Verificado por tabla de verdad: NAND con NOT en cada entrada da OR (no AND), y AND con NOT en cada entrada da NOR (no NAND) — las opciones 4 y 5 están mal. Las primeras tres sí son correctas.' },
 ];
 
 if (typeof module !== 'undefined') { module.exports = { RESUMEN, QUIZ }; }
+
+// ============================================================
+// GENERADORES DE PREGUNTAS DINÁMICAS
+// Cada uno arma una pregunta nueva, con números al azar, cada vez que se llama.
+// Así la práctica no se siente siempre igual, aunque el banco fijo (QUIZ) sea el mismo.
+// ============================================================
+
+function randInt(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+function hex2(v){ return v.toString(16).toUpperCase().padStart(2, '0') + 'h'; }
+function shuffleConIndice(arr, correctIdx){
+  const order = arr.map((_, i) => i).sort(() => Math.random() - 0.5);
+  return { arr: order.map(i => arr[i]), correct: order.indexOf(correctIdx) };
+}
+
+// 1) Conversión con signo: SyM / Ca1 / Ca2 / Exceso a 2^7, con un número al azar
+function genConversionSigno(){
+  const n = randInt(1, 127);
+  const bin7 = n.toString(2).padStart(7, '0');
+  const sym = parseInt('1' + bin7, 2);
+  const ca1 = (~n) & 0xFF;
+  const ca2 = (ca1 + 1) & 0xFF;
+  const exceso = ca2 ^ 0x80;
+  const sistemas = [
+    { nombre: 'Signo y Magnitud', val: sym },
+    { nombre: 'Complemento a 1', val: ca1 },
+    { nombre: 'Complemento a 2', val: ca2 },
+    { nombre: 'Exceso a 2⁷ (128)', val: exceso },
+  ];
+  const targetIdx = randInt(0, 3);
+  const target = sistemas[targetIdx];
+  const opts = sistemas.map(s => hex2(s.val));
+  const { arr, correct } = shuffleConIndice(opts, targetIdx);
+  return {
+    parcial: 1, tema: 'Numérico',
+    p: `Representando -${n}d en 1 byte con ${target.nombre}, ¿cuál es el valor correcto en hexadecimal?`,
+    o: arr, c: correct,
+    e: `+${n}d = ${bin7}b (7 bits de magnitud). SyM=${hex2(sym)} · Ca1=${hex2(ca1)} · Ca2=${hex2(ca2)} · Exceso a 2⁷=${hex2(exceso)} (Ca2 con el bit de signo invertido).`
+  };
+}
+
+// 2) Overflow: dos operandos al azar en Ca2 de 4 bits, ¿da overflow o no?
+function genOverflow(){
+  const w = 4, min = -(2 ** (w - 1)), max = 2 ** (w - 1) - 1;
+  let a = randInt(min, max), b = randInt(min, max);
+  if (Math.random() < 0.5) { const s = Math.random() < 0.5 ? 1 : -1; a = s * randInt(1, max); b = s * randInt(1, max - 1 >= 1 ? max : 1); }
+  a = Math.max(min, Math.min(max, a)); b = Math.max(min, Math.min(max, b));
+  const sum = a + b;
+  const overflow = sum > max || sum < min;
+  const toBin = v => ((v < 0 ? (1 << w) + v : v) & ((1 << w) - 1)).toString(2).padStart(w, '0');
+  const opts = ['Sí, da overflow', 'No, no da overflow'];
+  const correct = overflow ? 0 : 1;
+  return {
+    parcial: 1, tema: 'Overflow',
+    p: `Trabajando en Complemento a 2 de ${w} bits: ${toBin(a)}b (${a}d) + ${toBin(b)}b (${b}d). ¿Da overflow?`,
+    o: opts, c: correct,
+    e: `${a} + ${b} = ${sum}. El rango representable en ${w} bits es [${min} ; ${max}]. ${overflow ? `Como ${sum} queda fuera de ese rango, sí hay overflow.` : `Como ${sum} entra en ese rango, no hay overflow.`}`
+  };
+}
+
+// 3) Paridad: un byte al azar, ¿qué bit agregar para lograr paridad par o impar?
+function genParidad(){
+  const val = randInt(0, 255);
+  const bin = val.toString(2).padStart(8, '0');
+  const ones = bin.split('').filter(c => c === '1').length;
+  const targetParity = Math.random() < 0.5 ? 'par' : 'impar';
+  const neededBit = targetParity === 'par' ? (ones % 2 === 0 ? 0 : 1) : (ones % 2 === 0 ? 1 : 0);
+  return {
+    parcial: 1, tema: 'Numérico',
+    p: `Se transmite la combinación ${bin}b. ¿Qué bit hay que agregar para que el conjunto tenga paridad ${targetParity}?`,
+    o: ['0', '1'], c: neededBit,
+    e: `${bin}b tiene ${ones} unos (cantidad ${ones % 2 === 0 ? 'par' : 'impar'}). Para lograr paridad ${targetParity} hay que agregar un ${neededBit}.`
+  };
+}
+
+// 4) Caché de Mapeo Directo: dirección al azar, calcular el número de renglón
+function genCache(){
+  const offsetBits = 4, rowBits = 5, addrBits = 16;
+  const tagBits = addrBits - offsetBits - rowBits;
+  const addr = randInt(0, (1 << addrBits) - 1);
+  const addrBin = addr.toString(2).padStart(addrBits, '0');
+  const offsetBin = addrBin.slice(-offsetBits);
+  const rowBin = addrBin.slice(-(offsetBits + rowBits), -offsetBits);
+  const tagBin = addrBin.slice(0, tagBits);
+  const rowNum = parseInt(rowBin, 2);
+  const addrHex = addr.toString(16).toUpperCase().padStart(4, '0') + 'h';
+  const distractores = new Set([rowNum]);
+  while (distractores.size < 4) distractores.add(randInt(0, (1 << rowBits) - 1));
+  const opts = [...distractores].sort(() => Math.random() - 0.5).map(String);
+  const correct = opts.indexOf(String(rowNum));
+  return {
+    parcial: 1, tema: 'Memorias',
+    p: `Caché de Mapeo Directo: bloques de 16 bytes (offset = 4 bits) y 32 renglones (5 bits), en un procesador con bus de Address de 16 bits. Para la dirección ${addrHex}, ¿a qué número de renglón corresponde?`,
+    o: opts, c: correct,
+    e: `${addrHex} = ${addrBin}b. Los últimos 4 bits (${offsetBin}) son el offset. Los siguientes 5 bits (${rowBin}) dan el número de renglón = ${rowNum}d. El resto (${tagBin}) es la etiqueta.`
+  };
+}
+
+// 5) Conversión Hexadecimal → Binario, con un valor de 4 dígitos al azar
+function genHexABinario(){
+  const val = randInt(0, 0xFFFF);
+  const hex = val.toString(16).toUpperCase().padStart(4, '0') + 'h';
+  const bin = val.toString(2).padStart(16, '0');
+  const opciones = new Set([bin]);
+  while (opciones.size < 4) {
+    const d = (val ^ (1 << randInt(0, 15))) >>> 0;
+    opciones.add(d.toString(2).padStart(16, '0'));
+  }
+  const { arr, correct } = shuffleConIndice([...opciones], [...opciones].indexOf(bin));
+  return {
+    parcial: 1, tema: 'Numérico',
+    p: `¿Cuál es el resultado correcto de convertir ${hex} a binario?`,
+    o: arr.map(b => b + 'b'), c: correct,
+    e: `Agrupando de a 4 bits por cada dígito hexadecimal, ${hex} = ${bin}b.`
+  };
+}
+
+// 6) Identificar negativos en Ca2 directamente desde el valor hexadecimal (MSB = 1 <=> >= 80h)
+function genNegativosCa2Hex(){
+  const bytes = new Set();
+  while (bytes.size < 6) bytes.add(randInt(0, 255));
+  const arr = [...bytes];
+  const correctIdxs = arr.map((v, i) => (v >= 0x80 ? i : -1)).filter(i => i !== -1);
+  if (correctIdxs.length === 0 || correctIdxs.length === arr.length) return genNegativosCa2Hex();
+  const opts = arr.map(v => v.toString(16).toUpperCase().padStart(2, '0') + 'h');
+  return {
+    parcial: 1, tema: 'Numérico', multi: true,
+    p: `Trabajando en Complemento a 2 de 1 byte, marcá todos los valores hexadecimales que representan un número NEGATIVO:`,
+    o: opts, c: correctIdxs,
+    e: `Un valor es negativo en Ca2 de 1 byte cuando su bit más significativo es 1, o sea cuando el valor es 80h o mayor. Eso pasa con: ${correctIdxs.map(i => opts[i]).join(', ')}.`
+  };
+}
+
+// Cada generador declara con qué tema/parcial se lo asocia, para que respete los filtros.
+const GENERATORS = [
+  { tema: 'Numérico', parcial: 1, fn: genConversionSigno },
+  { tema: 'Overflow', parcial: 1, fn: genOverflow },
+  { tema: 'Numérico', parcial: 1, fn: genParidad },
+  { tema: 'Memorias', parcial: 1, fn: genCache },
+  { tema: 'Numérico', parcial: 1, fn: genHexABinario },
+  { tema: 'Numérico', parcial: 1, fn: genNegativosCa2Hex },
+];
+
+if (typeof module !== 'undefined') { module.exports.GENERATORS = GENERATORS; }

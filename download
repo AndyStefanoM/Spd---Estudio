@@ -1,0 +1,14 @@
+# Dependencias (se recrean con "npm install")
+node_modules/
+
+# Instaladores compilados (se generan con "npm run dist")
+dist/
+out/
+
+# Archivos basura del sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+npm-debug.log*
